@@ -11,7 +11,7 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
 const slackToken = process.env.SLACK_TOKEN;
-const channelId = process.env.SLACK_CHANNEL_ID || "CGJFM3XCM";
+const channelId = process.env.SLACK_CHANNEL_ID || "C09MN8FCWUQ";
 const initialSlackInfo = process.env.INITIAL_SLACK_INFO || "";
 //C07FJG27D2L Automation Regression Build Channel
 //C0189FJRC9E Prod Release Channel
@@ -79,10 +79,10 @@ async function sendInitialMessage(githubUsername, environment, buildName) {
   // Determine which channel to use based on the build name
   let targetChannelId = channelId;
   if (buildName.toLowerCase().includes('regression')) {
-    targetChannelId = "CGJFM3XCM"; // Regression Build Channel
+    targetChannelId = "C09MN8FCWUQ"; // Regression Build Channel
     console.log(`Using Regression channel: ${targetChannelId}`);
   } else if (buildName.toLowerCase().includes('smoke')) {
-    targetChannelId = "CGJFM3XCM"; // Prod Release Channel
+    targetChannelId = "C09MN8FCWUQ"; // Prod Release Channel
     console.log(`Using Smoke channel: ${targetChannelId}`);
   } else {
     console.log(`Using default channel from environment: ${targetChannelId}`);

@@ -12,8 +12,8 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
 const slackToken = process.env.SLACK_TOKEN;
-const mainChannelId = process.env.SLACK_CHANNEL_ID || "CGJFM3XCM"; // Replace with your main channel ID Prod_release = C0189FJRC9E , Automation_regression_build= C07FJG27D2L
-const failureChannelId = process.env.FAILURE_SLACK_CHANNEL_ID || "CGJFM3XCM"; // Replace with your failure channel ID
+const mainChannelId = process.env.SLACK_CHANNEL_ID || "C09MN8FCWUQ"; // Replace with your main channel ID Prod_release = C0189FJRC9E , Automation_regression_build= C07FJG27D2L
+const failureChannelId = process.env.FAILURE_SLACK_CHANNEL_ID || "C09MN8FCWUQ"; // Replace with your failure channel ID
 
 // Determine which workflow is running based on GITHUB_WORKFLOW environment variable
 const workflowName = process.env.GITHUB_WORKFLOW || '';
@@ -21,10 +21,10 @@ let targetChannelId = mainChannelId;
 
 if (workflowName.toLowerCase().includes('regression')) {
   console.log('Detected regression workflow, using regression channel');
-  targetChannelId = "CGJFM3XCM"; // Regression Build Channel
+  targetChannelId = "C09MN8FCWUQ"; // Regression Build Channel
 } else if (workflowName.toLowerCase().includes('smoke')) {
   console.log('Detected smoke workflow, using smoke channel');
-  targetChannelId = "CGJFM3XCM"; // Prod Release Channel
+  targetChannelId = "C09MN8FCWUQ"; // Prod Release Channel
 } else {
   console.log(`Using default channel from environment: ${targetChannelId}`);
 }
