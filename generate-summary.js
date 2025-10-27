@@ -43,45 +43,6 @@ try {
 📌 _Note: This is the sum of step durations (may exceed actual wall-clock time in parallel tests)._
 `;
 
-   // Display detailed failure information
-  if (failureDetails.length > 0) {
-    console.log("\n================ Detailed Failure Analysis ================\n");
-    
-    failureDetails.forEach((scenario, index) => {
-      console.log(`🔥 FAILURE ${index + 1}: ${scenario.scenarioName}`);
-      console.log(`📂 Feature: ${scenario.featureName}`);
-      console.log(`📍 Line: ${scenario.line}`);
-      if (scenario.tags) console.log(`🏷️  Tags: ${scenario.tags}`);
-      
-      scenario.failures.forEach((failure, failIndex) => {
-        console.log(`\n   Step ${failIndex + 1}: "${failure.stepName}" (Line ${failure.line})`);
-        
-        if (failure.locator) {
-          console.log(`   🎯 Locator: ${failure.locator}`);
-        }
-        
-        if (failure.expected && failure.received) {
-          console.log(`   ✅ Expected: ${failure.expected}`);
-          console.log(`   ❌ Received: ${failure.received}`);
-        }
-        
-        
-        if (failure.errorMessage) {
-          console.log(`   📝 Error Details:`);
-          // Split long error messages for better readability
-          const errorLines = failure.errorMessage.split('\n');
-          errorLines.forEach(line => {
-            if (line.trim()) {
-              console.log(`      ${line.trim()}`);
-            }
-          });
-        }
-      });
-      
-      console.log("\n" + "─".repeat(60));
-    });
-  }
-
   if (process.env.GITHUB_STEP_SUMMARY) {
     fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
     console.log("✅ Test summary added to GitHub step summary");
