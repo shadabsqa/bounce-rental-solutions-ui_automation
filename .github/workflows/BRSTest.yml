@@ -1,8 +1,8 @@
 name: BRS Test Suite
 
 on:
-  schedule:
-    - cron: "0 14 * * *" 
+  # schedule:
+  #   - cron: "0 14 * * 1"   # Run every Monday at 2:00 PM UTC  # ⛔ Disabled scheduled run
   # push:
   #   branches: ["master"]
   # pull_request:
@@ -24,11 +24,11 @@ jobs:
   test:
     runs-on: windows-latest
     env:
-      # fallback for TEST_ENV if not set from manual dispatch
       TEST_ENV: ${{ github.event.inputs.Environment || 'prod' }}
-      SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
-      SLACK_CHANNEL_ID: "C09MN8FCWUQ"
-      FAILURE_SLACK_CHANNEL_ID: "C09MN8FCWUQ"
+      # SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}   # ⛔ Slack disabled
+      # SLACK_CHANNEL_ID: "CGJFM3XCM"
+      # FAILURE_SLACK_CHANNEL_ID: "CGJFM3XCM"
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -38,49 +38,39 @@ jobs:
         with:
           node-version: "20.x"
 
-      - name: Check Slack configuration
-        shell: pwsh
-        run: |
-          npm install
-          Write-Host "Checking Slack token availability..."
-          if ([string]::IsNullOrEmpty($env:SLACK_TOKEN)) {
-            Write-Host "::error::SLACK_TOKEN environment variable is not set. Please check your GitHub secrets."
-            exit 1
-          }
-          Write-Host "✅ Slack token is configured"
-        env:
-          SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
-          GITHUB_ACTIONS: "true"
+      # - name: Check Slack configuration
+      #   shell: pwsh
+      #   run: |
+      #     npm install
+      #     Write-Host "Checking Slack token availability..."
+      #     if ([string]::IsNullOrEmpty($env:SLACK_TOKEN)) {
+      #       Write-Host "::error::SLACK_TOKEN environment variable is not set. Please check your GitHub secrets."
+      #       exit 1
+      #     }
+      #     Write-Host "✅ Slack token is configured"
+      #   env:
+      #     SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
+      #     GITHUB_ACTIONS: "true"
 
-      - name: Send initial Slack notification
-        id: slack-initial
-        shell: pwsh
-        run: |
-          npm install
-          Write-Host "Checking Slack token availability..."
-          if ([string]::IsNullOrEmpty($env:SLACK_TOKEN)) {
-            Write-Host "::error::SLACK_TOKEN environment variable is not set. Please check your GitHub secrets."
-            exit 1
-          }
-          $githubActor = "${{ github.actor }}"
-          $environment = "${{ env.TEST_ENV }}"
-          $buildName = "BRS Tests"
-          $output = node helpers/sendInitialSlackMessage.js "$githubActor" "$environment" "$buildName"
-          
-          # Look for the thread_ts line in the output
-          $threadTs = ($output | Select-String -Pattern "thread_ts=(.*)" | ForEach-Object { $_.Matches.Groups[1].Value })
-          
-          if ([string]::IsNullOrEmpty($threadTs)) {
-            Write-Host "::warning::Could not extract thread_ts from output. Using default value."
-            $threadTs = "0"
-          }
-          
-          Write-Host "Extracted thread_ts: $threadTs"
-          echo "thread_ts=$threadTs" >> $env:GITHUB_OUTPUT
-        env:
-          SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
-          SLACK_CHANNEL_ID: "C09MN8FCWUQ"
-          GITHUB_ACTIONS: "true"
+      # - name: Send initial Slack notification
+      #   id: slack-initial
+      #   shell: pwsh
+      #   run: |
+      #     npm install
+      #     $githubActor = "${{ github.actor }}"
+      #     $environment = "${{ env.TEST_ENV }}"
+      #     $buildName = "BRS Tests"
+      #     $output = node helpers/sendInitialSlackMessage.js "$githubActor" "$environment" "$buildName"
+      #     $threadTs = ($output | Select-String -Pattern "thread_ts=(.*)" | ForEach-Object { $_.Matches.Groups[1].Value })
+      #     if ([string]::IsNullOrEmpty($threadTs)) {
+      #       Write-Host "::warning::Could not extract thread_ts. Using default."
+      #       $threadTs = "0"
+      #     }
+      #     echo "thread_ts=$threadTs" >> $env:GITHUB_OUTPUT
+      #   env:
+      #     SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
+      #     SLACK_CHANNEL_ID: "CGJFM3XCM"
+      #     GITHUB_ACTIONS: "true"
 
       - name: Debug - Environment Variables
         shell: pwsh
@@ -90,7 +80,6 @@ jobs:
       - name: Install dependencies
         shell: pwsh
         run: |
-          # First run npm install to generate package-lock.json if it doesn't exist
           if (-not (Test-Path -Path "package-lock.json")) {
             npm install
           } else {
@@ -136,14 +125,13 @@ jobs:
         if: always()
         shell: pwsh
         run: |
-          Write-Host "\n=============================================" -ForegroundColor Green
-          Write-Host "TEST REPORT LOCATIONS:" -ForegroundColor Green
-          Write-Host "=============================================" -ForegroundColor Green
-          Write-Host "HTML Report: $PWD/test-reports/index.html" -ForegroundColor Cyan
-          Write-Host "JSON Report: $PWD/reports/cucumber-report.json" -ForegroundColor Cyan
-          Write-Host "=============================================\n" -ForegroundColor Green
-          
-          # Create a marker file with report locations for easy reference
+          Write-Host "\n============================================="
+          Write-Host "TEST REPORT LOCATIONS:"
+          Write-Host "============================================="
+          Write-Host "HTML Report: $PWD/test-reports/index.html"
+          Write-Host "JSON Report: $PWD/reports/cucumber-report.json"
+          Write-Host "=============================================\n"
+
           @"
           TEST REPORT LOCATIONS:
           =============================================
@@ -170,7 +158,7 @@ jobs:
             cucumber-report.json
           retention-days: 30
           if-no-files-found: warn
-          
+
       - name: Upload report locations
         if: always()
         uses: actions/upload-artifact@v4
@@ -190,60 +178,21 @@ jobs:
             reports/screenshots/
           retention-days: 30
           if-no-files-found: ignore
-          
-      - name: Send success Slack notification
-        if: success()
-        shell: pwsh
-        run: |
-          Write-Host "Sending success notification to Slack..."
-          if ([string]::IsNullOrEmpty($env:SLACK_TOKEN)) {
-            Write-Host "::warning::SLACK_TOKEN environment variable is not set. Skipping Slack notification."
-            exit 0
-          }
-          
-          $threadTs = "${{ steps.slack-initial.outputs.thread_ts }}"
-          if ([string]::IsNullOrEmpty($threadTs)) {
-            Write-Host "::warning::thread_ts is empty. Using default value."
-            $threadTs = "0"
-          }
-          
-          Write-Host "Using thread_ts: $threadTs"
-          node helpers/postBuildStatus.js "success" "$threadTs"
-        env:
-          SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
-          SLACK_CHANNEL_ID: "C09MN8FCWUQ"
-          GITHUB_SERVER_URL: ${{ github.server_url }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          GITHUB_RUN_ID: ${{ github.run_id }}
-          GITHUB_WORKFLOW: ${{ github.workflow }}
-          GITHUB_ACTOR: ${{ github.actor }}
-          GITHUB_ACTIONS: "true"
-          
-      - name: Send failure Slack notification
-        if: failure()
-        shell: pwsh
-        run: |
-          Write-Host "Sending failure notification to Slack..."
-          if ([string]::IsNullOrEmpty($env:SLACK_TOKEN)) {
-            Write-Host "::warning::SLACK_TOKEN environment variable is not set. Skipping Slack notification."
-            exit 0
-          }
-          
-          $threadTs = "${{ steps.slack-initial.outputs.thread_ts }}"
-          if ([string]::IsNullOrEmpty($threadTs)) {
-            Write-Host "::warning::thread_ts is empty. Using default value."
-            $threadTs = "0"
-          }
-          
-          Write-Host "Using thread_ts: $threadTs"
-          node helpers/postBuildStatus.js "failure" "$threadTs"
-        env:
-          SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
-          SLACK_CHANNEL_ID: "C09MN8FCWUQ"
-          FAILURE_SLACK_CHANNEL_ID: "C09MN8FCWUQ"
-          GITHUB_SERVER_URL: ${{ github.server_url }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          GITHUB_RUN_ID: ${{ github.run_id }}
-          GITHUB_WORKFLOW: ${{ github.workflow }}
-          GITHUB_ACTOR: ${{ github.actor }}
-          GITHUB_ACTIONS: "true"
+
+      # - name: Send success Slack notification
+      #   if: success()
+      #   shell: pwsh
+      #   run: |
+      #     node helpers/postBuildStatus.js "success" "0"
+      #   env:
+      #     SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
+      #     SLACK_CHANNEL_ID: "CGJFM3XCM"
+
+      # - name: Send failure Slack notification
+      #   if: failure()
+      #   shell: pwsh
+      #   run: |
+      #     node helpers/postBuildStatus.js "failure" "0"
+      #   env:
+      #     SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
+      #     FAILURE_SLACK_CHANNEL_ID: "CGJFM3XCM"
